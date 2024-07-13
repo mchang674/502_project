@@ -1,0 +1,111 @@
+---
+title: "502 Project EDA"
+author: "Madeline Chang"
+output:
+ pdf_document: default
+editor_options: 
+  chunk_output_type: console
+---
+
+```{r}
+library(tidyverse)
+library(dplyr)
+library(forcats)
+library(ggplot2)
+library(rpart)
+library(caret)
+library(rpart.plot)
+library(C50)
+library(Metrics)
+library(e1071)
+```
+
+Reading in data
+
+```{r}
+recruitment<- read.csv('/Users/mtc/ADS/ADS 502/Project/recruitment_data.csv')
+
+recruitment<- recruitment %>%
+  mutate(Gender = as.factor(Gender),
+         EducationLevel = as.factor(EducationLevel),
+         RecruitmentStrategy = as.factor(RecruitmentStrategy),
+         HiringDecision = as.factor(HiringDecision))
+```
+
+Data Quality
+
+```{r}
+colSums(is.na(recruitment))
+```
+
+```{r}
+near_zero<- nearZeroVar(recruitment) # no columns with zero or near-zero variance
+
+corr<- cor(recruitment[,c(1, 4, 5, 6, 7, 8, 9)])
+high_corr <- findCorrelation(corr, cutoff = 0.75) # no numeric columns with high correlation with each other
+```
+
+
+Distribution of Variables
+
+```{r}
+hist<- function(col, bin_num){
+  ggplot(data = recruitment) +
+    geom_histogram(aes(x = .data[[col]]), bins = bin_num) +
+    xlab(col)
+}
+
+
+hist("Age", 20)
+hist("ExperienceYears", 15)
+hist("PreviousCompanies", 5)
+hist("DistanceFromCompany", 30)
+hist("InterviewScore", 25)
+hist("SkillScore", 25)
+hist("PersonalityScore", 25)
+```
+
+```{r}
+bar<- function(col){
+  ggplot(data = recruitment) +
+    geom_bar(aes(x = .data[[col]])) +
+    xlab(col)
+}
+
+bar("Gender")
+bar("EducationLevel")
+bar("RecruitmentStrategy")
+bar("HiringDecision")
+```
+
+```{r}
+ggplot(data = recruitment) +
+  geom_bar(aes(x = RecruitmentStrategy, fill = HiringDecision))
+
+ggplot(data = recruitment) +
+  geom_bar(aes(x = HiringDecision, fill = Gender))
+```
+
+```{r}
+hiring_point<- function(x, y){
+  ggplot(data = recruitment) +
+    geom_point(aes(x = .data[[x]], y = .data[[y]], color = HiringDecision))
+}
+
+hiring_point("SkillScore", "PersonalityScore")
+hiring_point("SkillScore", "InterviewScore")
+```
+
+
+```{r}
+ggplot(data = recruitment) +
+  geom_point(aes(x = SkillScore, y = InterviewScore, color = Gender))+
+  facet_grid(~HiringDecision)
+
+ggplot(data = recruitment) +
+  geom_point(aes(x = SkillScore, y = PersonalityScore, color = HiringDecision)) +
+  facet_grid(~Gender)
+```
+
+
+
