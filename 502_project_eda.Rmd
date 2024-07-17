@@ -29,7 +29,18 @@ recruitment<- recruitment %>%
   mutate(Gender = as.factor(Gender),
          EducationLevel = as.factor(EducationLevel),
          RecruitmentStrategy = as.factor(RecruitmentStrategy),
-         HiringDecision = as.factor(HiringDecision))
+         HiringDecision = as.factor(HiringDecision),
+         Gender_name = as.factor(ifelse(Gender == 0, "Male", "Female")),
+         Hiring_name = as.factor(ifelse(HiringDecision == 0, "Not Hired", "Hired")),
+         Recruitment_name = fct_collapse(RecruitmentStrategy,
+                                        Aggressive = 1,
+                                        Moderate = 2,
+                                        Conservative = 3),
+         Education_name = fct_collapse(EducationLevel,
+                                       Bachelor_1 = 1,
+                                       Bachelor_2 = 2,
+                                       Masters = 3,
+                                       PhD = 4))
 ```
 
 Data Quality
@@ -72,18 +83,21 @@ bar<- function(col){
     xlab(col)
 }
 
-bar("Gender")
-bar("EducationLevel")
-bar("RecruitmentStrategy")
-bar("HiringDecision")
+bar("Gender_name")
+bar("Education_name")
+bar("Recruitment_name")
+bar("Hiring_name")
 ```
 
 ```{r}
 ggplot(data = recruitment) +
-  geom_bar(aes(x = RecruitmentStrategy, fill = HiringDecision))
+  geom_bar(aes(x = Recruitment_name, fill = Hiring_name))
 
 ggplot(data = recruitment) +
-  geom_bar(aes(x = HiringDecision, fill = Gender))
+  geom_bar(aes(x = Hiring_name, fill = Gender_name))
+
+ggplot(data = recruitment) +
+  geom_bar(aes(x = Hiring_name, fill = Education_name))
 ```
 
 ```{r}
@@ -99,12 +113,12 @@ hiring_point("SkillScore", "InterviewScore")
 
 ```{r}
 ggplot(data = recruitment) +
-  geom_point(aes(x = SkillScore, y = InterviewScore, color = Gender))+
-  facet_grid(~HiringDecision)
+  geom_point(aes(x = SkillScore, y = InterviewScore, color = Gender_name))+
+  facet_grid(~Hiring_name)
 
 ggplot(data = recruitment) +
-  geom_point(aes(x = SkillScore, y = PersonalityScore, color = HiringDecision)) +
-  facet_grid(~Gender)
+  geom_point(aes(x = SkillScore, y = PersonalityScore, color = Hiring_name)) +
+  facet_grid(~Gender_name)
 ```
 
 
