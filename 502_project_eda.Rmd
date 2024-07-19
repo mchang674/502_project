@@ -32,7 +32,7 @@ recruitment<- recruitment %>%
          RecruitmentStrategy = as.factor(RecruitmentStrategy),
          HiringDecision = as.factor(HiringDecision),
          Gender_name = as.factor(ifelse(Gender == 0, "Male", "Female")),
-         Hiring_name = as.factor(ifelse(HiringDecision == 0, "Not_Hired", "Hired")),
+         Hiring_name = as.factor(ifelse(HiringDecision == 0, "Not Hired", "Hired")),
          Recruitment_name = fct_collapse(RecruitmentStrategy,
                                         Aggressive = 1,
                                         Moderate = 2,
@@ -69,12 +69,24 @@ hist<- function(col, bin_num){
 
 
 hist("Age", 20)
-hist("ExperienceYears", 15)
-hist("PreviousCompanies", 5)
-hist("DistanceFromCompany", 30)
-hist("InterviewScore", 25)
-hist("SkillScore", 25)
-hist("PersonalityScore", 25)
+
+hist("ExperienceYears", 15) +
+  xlab("Years of Experience")
+
+hist("PreviousCompanies", 5) +
+  xlab("Number of Previous Companies")
+
+hist("DistanceFromCompany", 30) +
+  xlab("Distance from Company")
+
+hist("InterviewScore", 25) +
+  xlab("Interview Score")
+
+hist("SkillScore", 25)+
+  xlab("Skill Score")
+
+hist("PersonalityScore", 25) +
+  xlab("Personality Score")
 ```
 
 ```{r}
@@ -84,10 +96,17 @@ bar<- function(col){
     xlab(col)
 }
 
-bar("Gender_name")
-bar("Education_name")
-bar("Recruitment_name")
-bar("Hiring_name")
+bar("Gender_name") +
+  xlab("Sex")
+
+bar("Education_name") +
+  xlab("Education Type")
+
+bar("Recruitment_name") +
+  xlab("Recruitment Level")
+
+bar("Hiring_name") +
+  xlab("Hiring Outcome")
 ```
 
 ```{r}
@@ -98,7 +117,7 @@ ggplot(data = recruitment) +
   geom_bar(aes(x = Hiring_name, fill = Gender_name))
 
 ggplot(data = recruitment) +
-  geom_bar(aes(x = Hiring_name, fill = Education_name))
+  geom_bar(aes(x = Education_name, fill = Hiring_name))
 ```
 
 ```{r}
@@ -135,8 +154,12 @@ recruit_test <- recruitment[-trainingRows, ]
 log_reg<- glm(HiringDecision ~ Age + Gender + EducationLevel + ExperienceYears + PreviousCompanies + DistanceFromCompany + InterviewScore + SkillScore + PersonalityScore + RecruitmentStrategy, data = recruit_train, family = "binomial")
 
 summary(log_reg)
+
+exp(log_reg$coefficients)
 ```
 
 Combine both bachelors degrees into one level- not statistically significant
-No need for age or gender (seen in EDA), previous companies and distance are not statistically significant.
+No need for age or gender (seen in EDA and logistic model), previous companies and distance are not statistically significant.
+
+What seems to be most important are aggressive recruiting strategy and education at masters level or above. (See exponentiated coefficients from logistic regression model)
 
