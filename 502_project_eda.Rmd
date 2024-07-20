@@ -111,13 +111,19 @@ bar("Hiring_name") +
 
 ```{r}
 ggplot(data = recruitment) +
-  geom_bar(aes(x = Recruitment_name, fill = Hiring_name))
+  geom_bar(aes(x = Recruitment_name, fill = Hiring_name)) +
+  xlab("Recruitment Type") +
+  guides(fill = guide_legend(title = "Hiring Decision"))
 
 ggplot(data = recruitment) +
-  geom_bar(aes(x = Hiring_name, fill = Gender_name))
+  geom_bar(aes(x = Gender_name, fill = Hiring_name)) +
+  xlab("Sex of Applicant") +
+  guides(fill = guide_legend(title = "Hiring Decision"))
 
 ggplot(data = recruitment) +
-  geom_bar(aes(x = Education_name, fill = Hiring_name))
+  geom_bar(aes(x = Education_name, fill = Hiring_name)) +
+  xlab("Education Level") +
+  guides(fill = guide_legend(title = "Hiring Decision"))
 ```
 
 ```{r}
@@ -126,19 +132,24 @@ hiring_point<- function(x, y){
     geom_point(aes(x = .data[[x]], y = .data[[y]], color = Hiring_name))
 }
 
-hiring_point("SkillScore", "PersonalityScore")
-hiring_point("SkillScore", "InterviewScore")
+hiring_point("SkillScore", "PersonalityScore") + 
+  guides(color = guide_legend(title = "Hiring Decision"))
+
+hiring_point("SkillScore", "InterviewScore") +
+  guides(color = guide_legend(title = "Hiring Decision"))
 ```
 
 
 ```{r}
 ggplot(data = recruitment) +
   geom_point(aes(x = SkillScore, y = InterviewScore, color = Gender_name))+
-  facet_grid(~Hiring_name)
+  facet_grid(~Hiring_name) + 
+  guides(color = guide_legend(title = "Sex of Applicant"))
 
 ggplot(data = recruitment) +
-  geom_point(aes(x = SkillScore, y = PersonalityScore, color = Hiring_name)) +
-  facet_grid(~Gender_name)
+  geom_point(aes(x = SkillScore, y = PersonalityScore, color = Gender_name)) +
+  facet_grid(~Hiring_name) + 
+  guides(color = guide_legend(title = "Sex of Applicant"))
 ```
 
 ```{r}
