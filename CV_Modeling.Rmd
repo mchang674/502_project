@@ -93,11 +93,7 @@ recruit_test_n<- non_num_test %>%
 ### Model Building Function
 
 ```{r}
-ctrl <- trainControl(method = "cv",
-                     summaryFunction = twoClassSummary,
-                     classProbs = TRUE,
-                     savePredictions = TRUE)
-
+# Function for classification methods without tuning parameters
 class_function<- function(method){
   model<- train(x = recruit_train_n[,1:16], 
                y = recruit_train_n$HiringDecision,
@@ -106,7 +102,55 @@ class_function<- function(method){
                metric = "ROC",
                trControl = ctrl)
 }
+
+# Function for classification methods with a tuning grid
+class_grid<- function(method, grid, ctrl){
+  model<- train(x = recruit_train_n[,1:16], 
+               y = recruit_train_n$HiringDecision,
+               method = method,
+               preProc = c("center", "scale"),
+               tuneGrid = grid,
+               metric = "ROC",
+               trControl = ctrl)
+}
+
+# Function for KNN classification
+class_knn<- function(method, length, ctrl){
+  model<- train(x = recruit_train_n[,1:16], 
+               y = recruit_train_n$HiringDecision,
+               method = method,
+               preProc = c("center", "scale"),
+               tuneLength = length,
+               metric = "ROC",
+               trControl = ctrl)
+}
+
+# Function for Random Forest classification
+class_rf<- function(method, grid, ntree, ctrl){
+  model<- train(x = recruit_train_n[,1:16], 
+               y = recruit_train_n$HiringDecision,
+               method = method,
+               preProc = c("center", "scale"),
+               tuneGrid = grid,
+               ntree = ntree,
+               metric = "ROC",
+               trControl = ctrl)
+}
 ```
+
+### Setting Controls and Hyperparameter Tuning
+
+```{r}
+ctrl <- trainControl(method = "cv",
+                     summaryFunction = twoClassSummary,
+                     classProbs = TRUE,
+                     savePredictions = TRUE)
+
+nnet_grid <- expand.grid(size=1:4, decay=c(0.5, 1, 1.5, 2, 2.5, 3, 3.5, 4))
+
+mtryValues <- data.frame(mtry = seq(5,15,1))
+```
+
 
 ## Modeling
 
@@ -150,7 +194,7 @@ cm
 
 ```{r}
 set.seed(720)
-knn_train<- class_function("knn")
+knn_train<- class_knn("knn", 20, ctrl)
 ```
 
 ```{r}
@@ -168,7 +212,7 @@ cm
 
 ```{r}
 set.seed(720)
-nnet_train<- class_function("nnet")
+nnet_train<- class_grid("nnet", nnet_grid, ctrl)
 ```
 
 ```{r}
