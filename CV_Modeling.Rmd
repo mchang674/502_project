@@ -149,6 +149,8 @@ ctrl <- trainControl(method = "cv",
 
 nnet_grid <- expand.grid(size=1:4, decay=c(2, 2.5, 3, 3.5, 4, 4.5, 5))
 
+cart_grid<- data.frame(maxdepth = seq(5, 20, 1))
+
 mtryValues <- data.frame(mtry = seq(5,15,1))
 ```
 
@@ -187,6 +189,20 @@ nnet_train<- class_grid("nnet", nnet_grid, ctrl)
 nnet_train
 ```
 
+```{r}
+set.seed(720)
+cart_train<- class_grid("rpart2", cart_grid, ctrl)
+
+cart_train
+```
+
+```{r}
+set.seed(720)
+c50_train<- class_function("C5.0")
+
+c50_train
+```
+
 ## Model Performance on the Training Dataset Using ROC
 
 ```{r}
@@ -200,17 +216,23 @@ glm_roc<- model_roc(glm_train)
 nb_roc<- model_roc(nb_train)
 knn_roc<- model_roc(knn_train)
 nnet_roc<- model_roc(nnet_train)
+cart_roc<- model_roc(cart_train)
+c50_roc<- model_roc(c50_train)
 
 plot(glm_roc, type = "s", col = 'red', legacy.axes = TRUE, 
      main = "Hiring Decision ROC Curve")
 plot(nb_roc, type = "s", add = TRUE, col = 'blue', legacy.axes = TRUE)
 plot(knn_roc, type = "s", add = TRUE, col = 'pink', legacy.axes = TRUE)
 plot(nnet_roc, type = "s", add = TRUE, col = 'yellow', legacy.axes = TRUE)
+plot(cart_roc, type = "s", add = TRUE, col = 'green', legacy.axes = TRUE)
+plot(c50_roc, type = "s", add = TRUE, col = 'purple', legacy.axes = TRUE)
 legend("bottomright", legend=c(paste("LR (AUC =", round(glm_roc$auc,4), ")"), 
                                paste("NB (AUC =", round(nb_roc$auc,4), ")"), 
                                paste("KNN (AUC =", round(knn_roc$auc,4), ")"), 
-                               paste("NNET (AUC =", round(nnet_roc$auc,4), ")")),
-       col=c("red", "blue", "pink", "yellow"), lwd=2)
+                               paste("NNET (AUC =", round(nnet_roc$auc,4), ")"),
+                               paste("CART (AUC =", round(cart_roc$auc,4), ")"), 
+                               paste("C5.0 (AUC =", round(c50_roc$auc,4), ")")),
+       col=c("red", "blue", "pink", "yellow", "green", "purple"), lwd=2)
 ```
 
 
@@ -219,7 +241,9 @@ train_re<- resamples(list(
   glm = glm_train,
   nb = nb_train,
   knn = knn_train,
-  nnet = nnet_train
+  nnet = nnet_train,
+  cart = cart_train,
+  c50 = c50_train
 ))
 
 dotplot(train_re, metric = "ROC")
@@ -233,7 +257,9 @@ testResults <- data.frame(
   glm = predict(glm_train, recruit_test_n[, 1:16]),
   nb = predict(nb_train, recruit_test_n[, 1:16]),
   knn = predict(knn_train, recruit_test_n[, 1:16]),
-  nnet = predict(nnet_train, recruit_test_n[, 1:16])
+  nnet = predict(nnet_train, recruit_test_n[, 1:16]),
+  cart = predict(cart_train, recruit_test_n[, 1:16]),
+  c50 = predict(c50_train, recruit_test_n[, 1:16])
 )
 ```
 
@@ -245,6 +271,10 @@ confusionMatrix(testResults$obs, testResults$nb)
 confusionMatrix(testResults$obs, testResults$knn)
 
 confusionMatrix(testResults$obs, testResults$nnet)
+
+confusionMatrix(testResults$obs, testResults$cart)
+
+confusionMatrix(testResults$obs, testResults$c50)
 ```
 
 
