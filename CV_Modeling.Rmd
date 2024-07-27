@@ -24,6 +24,7 @@ library(NeuralNetTools)
 library(fastDummies)
 library(class)
 library(naivebayes)
+library(pROC)
 ```
 
 Reading in data
@@ -146,7 +147,7 @@ ctrl <- trainControl(method = "cv",
                      classProbs = TRUE,
                      savePredictions = TRUE)
 
-nnet_grid <- expand.grid(size=1:4, decay=c(0.5, 1, 1.5, 2, 2.5, 3, 3.5, 4))
+nnet_grid <- expand.grid(size=1:4, decay=c(2, 2.5, 3, 3.5, 4, 4.5, 5))
 
 mtryValues <- data.frame(mtry = seq(5,15,1))
 ```
@@ -161,17 +162,6 @@ set.seed(720)
 glm_train<- class_function("glm")
 ```
 
-```{r}
-glm_pred<- predict(glm_train, recruit_test_n)
-
-conf<- data.frame(pred = glm_pred, actual = recruit_test_n$HiringDecision) %>%
-  mutate(actual = as.factor(actual),
-         pred = as.factor(pred))
-
-cm<- confusionMatrix(conf$actual, conf$pred)
-cm
-```
-
 ### Naive Bayes
 
 ```{r}
@@ -179,33 +169,13 @@ set.seed(720)
 nb_train<- class_function("naive_bayes")
 ```
 
-```{r}
-nb_pred<- predict(nb_train, recruit_test_n)
-
-conf<- data.frame(pred = nb_pred, actual = recruit_test_n$HiringDecision) %>%
-  mutate(actual = as.factor(actual),
-         pred = as.factor(pred))
-
-cm<- confusionMatrix(conf$actual, conf$pred)
-cm
-```
-
 ### KNN Model
 
 ```{r}
 set.seed(720)
 knn_train<- class_knn("knn", 20, ctrl)
-```
 
-```{r}
-knn_pred<- predict(knn_train, recruit_test_n)
-
-conf<- data.frame(pred = knn_pred, actual = recruit_test_n$HiringDecision) %>%
-  mutate(actual = as.factor(actual),
-         pred = as.factor(pred))
-
-cm<- confusionMatrix(conf$actual, conf$pred)
-cm
+knn_train
 ```
 
 ### Neural Network Model
@@ -213,17 +183,69 @@ cm
 ```{r}
 set.seed(720)
 nnet_train<- class_grid("nnet", nnet_grid, ctrl)
+
+nnet_train
+```
+
+## Model Performance on the Training Dataset Using ROC
+
+```{r}
+model_roc <- function(model){
+  roc(response = model$pred$obs,
+             predictor = model$pred$Hired,
+             levels = rev(levels(model$pred$obs)))
+}
+
+glm_roc<- model_roc(glm_train)
+nb_roc<- model_roc(nb_train)
+knn_roc<- model_roc(knn_train)
+nnet_roc<- model_roc(nnet_train)
+
+plot(glm_roc, type = "s", col = 'red', legacy.axes = TRUE, 
+     main = "Hiring Decision ROC Curve")
+plot(nb_roc, type = "s", add = TRUE, col = 'blue', legacy.axes = TRUE)
+plot(knn_roc, type = "s", add = TRUE, col = 'pink', legacy.axes = TRUE)
+plot(nnet_roc, type = "s", add = TRUE, col = 'yellow', legacy.axes = TRUE)
+legend("bottomright", legend=c(paste("LR (AUC =", round(glm_roc$auc,4), ")"), 
+                               paste("NB (AUC =", round(nb_roc$auc,4), ")"), 
+                               paste("KNN (AUC =", round(knn_roc$auc,4), ")"), 
+                               paste("NNET (AUC =", round(nnet_roc$auc,4), ")")),
+       col=c("red", "blue", "pink", "yellow"), lwd=2)
+```
+
+
+```{r}
+train_re<- resamples(list(
+  glm = glm_train,
+  nb = nb_train,
+  knn = knn_train,
+  nnet = nnet_train
+))
+
+dotplot(train_re, metric = "ROC")
+```
+
+## Applying Models to Test Dataset
+
+```{r}
+testResults <- data.frame(
+  obs = recruit_test_n$HiringDecision,
+  glm = predict(glm_train, recruit_test_n[, 1:16]),
+  nb = predict(nb_train, recruit_test_n[, 1:16]),
+  knn = predict(knn_train, recruit_test_n[, 1:16]),
+  nnet = predict(nnet_train, recruit_test_n[, 1:16])
+)
 ```
 
 ```{r}
-nnet_pred<- predict(nnet_train, recruit_test_n)
+confusionMatrix(testResults$obs, testResults$glm)
 
-conf<- data.frame(pred = nnet_pred, actual = recruit_test_n$HiringDecision) %>%
-  mutate(actual = as.factor(actual),
-         pred = as.factor(pred))
+confusionMatrix(testResults$obs, testResults$nb)
 
-cm<- confusionMatrix(conf$actual, conf$pred)
-cm
+confusionMatrix(testResults$obs, testResults$knn)
+
+confusionMatrix(testResults$obs, testResults$nnet)
 ```
+
 
 
