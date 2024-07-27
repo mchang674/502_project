@@ -1,0 +1,162 @@
+```{r}
+# install libraries
+install.packages("rpart")
+
+```
+
+
+```{r}
+# Load necessary libraries
+library(tidyverse)
+library(C50)    # C5.0 decision trees
+library(caret)
+library(e1071)
+library(randomForest)
+library(rpart)  # CART decision trees
+library(rpart.plot)
+
+```
+
+```{r}
+# Load the dataset
+data <- read.csv("recruitment_data.csv")
+
+```
+
+```{r}
+# Data Understanding
+str(data)
+summary(data)
+```
+
+
+```{r}
+# Data Cleaning
+# Handle missing values (if any)
+data <- na.omit(data)
+```
+
+
+```{r}
+# Convert categorical variables to factors
+data$Gender <- as.factor(data$Gender)
+data$EducationLevel <- as.factor(data$EducationLevel)
+data$PreviousCompanies <- as.factor(data$PreviousCompanies)
+data$RecruitmentStrategy <- as.factor(data$RecruitmentStrategy)
+data$HiringDecision <- as.factor(data$HiringDecision)
+
+# Verify the conversion
+str(data)
+
+```
+
+```{r}
+
+# Split the data into training and testing sets
+set.seed(123)
+trainIndex <- createDataPartition(data$HiringDecision, p = 0.8, list = FALSE, times = 1)
+
+trainData <- data[trainIndex, ]
+testData <- data[-trainIndex, ]
+
+# Check the dimensions of the training and testing sets
+dim(trainData)
+dim(testData)
+```
+
+
+```{r}
+# Exploratory Data Analysis
+# Plot distribution of target variable
+ggplot(data, aes(x = HiringDecision)) +
+    geom_bar() +
+    ggtitle("Distribution of Recruitment Outcome")
+```
+
+
+##  CART EVALUATION METRICS
+
+```{r}
+# Train the CART model
+cart_model <- rpart(HiringDecision ~ ., data = trainData, method = "class")
+
+# Print the model summary
+summary(cart_model)
+
+# Plot the decision tree
+rpart.plot(cart_model)
+
+
+```
+
+```{r}
+# Make predictions on the test data
+predictions <- predict(cart_model, testData, type = "class")
+
+```
+```{r}
+# Evaluate the model performance using confusion matrix
+conf_matrix <- confusionMatrix(predictions, testData$HiringDecision)
+
+# Print confusion matrix and metrics
+print(conf_matrix)
+
+```
+CART Evaluation
+```{r}
+# Create a confusion matrix plot
+conf_matrix_table <- as.data.frame(conf_matrix$table)
+colnames(conf_matrix_table) <- c("Prediction", "Reference", "Freq")
+
+# Plot the confusion matrix
+ggplot(data = conf_matrix_table, aes(x = Reference, y = Prediction, fill = Freq)) +
+  geom_tile() +
+  geom_text(aes(label = Freq), vjust = 1) +
+  scale_fill_gradient(low = "white", high = "steelblue") +
+  theme_minimal() +
+  labs(title = "Confusion Matrix",
+       x = "Actual",
+       y = "Predicted")
+
+```
+
+## C5.0 Decision Tree
+```{r}
+# Train the C5.0 model
+c50_model <- C5.0(HiringDecision ~ ., data = trainData)
+
+# Print the model summary
+summary(c50_model)
+
+```
+
+
+```{r}
+# Make predictions on the test data
+predictions <- predict(c50_model, testData)
+
+# Evaluate the model performance using confusion matrix
+conf_matrix <- confusionMatrix(predictions, testData$HiringDecision)
+
+# Print confusion matrix and metrics
+print(conf_matrix)
+
+```
+
+```{r}
+# Create a confusion matrix plot
+conf_matrix_table <- as.data.frame(conf_matrix$table)
+colnames(conf_matrix_table) <- c("Prediction", "Reference", "Freq")
+
+# Plot the confusion matrix
+ggplot(data = conf_matrix_table, aes(x = Reference, y = Prediction, fill = Freq)) +
+  geom_tile() +
+  geom_text(aes(label = Freq), vjust = 1) +
+  scale_fill_gradient(low = "white", high = "steelblue") +
+  theme_minimal() +
+  labs(title = "Confusion Matrix",
+       x = "Actual",
+       y = "Predicted")
+
+```
+
