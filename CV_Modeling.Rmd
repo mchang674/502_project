@@ -267,6 +267,31 @@ train_re<- resamples(list(
 dotplot(train_re, metric = "ROC")
 ```
 
+### Variable Importance
+```{r}
+glm_imp<- varImp(glm_train)
+plot(glm_imp, top = 10, main = "CV GLM Variable Importance")
+
+nb_imp<- varImp(nb_train)
+plot(nb_imp, top = 10, main = "CV NB Variable Importance")
+
+knn_imp<- varImp(knn_train)
+plot(knn_imp, top = 10, main = "CV KNN Variable Importance")
+
+nnet_imp<- varImp(nnet_train)
+plot(nnet_imp, top = 10, main = "CV NNET Variable Importance")
+
+cart_imp<- varImp(cart_train)
+plot(cart_imp, top = 10, main = "CV CART Variable Importance")
+
+c50_imp<- varImp(c50_train)
+plot(c50_imp, top = 10, main = "CV C5.0 Variable Importance")
+
+rf_imp<- varImp(rf_train)
+plot(rf_imp, top = 10, main = "CV RF Variable Importance")
+```
+
+
 ## Applying Models to Test Dataset
 
 ```{r}
