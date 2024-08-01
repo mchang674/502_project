@@ -182,7 +182,7 @@ knn_train
 
 ### Neural Network Model
 
-```{r}
+```{r, echo=FALSE}
 set.seed(720)
 nnet_train<- class_grid("nnet", nnet_grid, ctrl)
 
