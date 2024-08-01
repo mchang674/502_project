@@ -112,6 +112,7 @@ class_grid<- function(method, grid, ctrl){
                preProc = c("center", "scale"),
                tuneGrid = grid,
                metric = "ROC",
+               trace = FALSE,
                trControl = ctrl)
 }
 
@@ -147,6 +148,9 @@ ctrl <- trainControl(method = "cv",
                      classProbs = TRUE,
                      savePredictions = TRUE)
 
+glmnGrid <- expand.grid(alpha = seq(0, 0.2, length = 10),
+                        lambda = seq(0, .2, length = 10))
+
 nnet_grid <- expand.grid(size=1:4, decay=c(2, 2.5, 3, 3.5, 4, 4.5, 5))
 
 cart_grid<- data.frame(maxdepth = seq(5, 20, 1))
@@ -163,6 +167,16 @@ rf_grid <- data.frame(mtry = seq(5,15,1))
 set.seed(720)
 glm_train<- class_function("glm", ctrl)
 ```
+
+### Penalized Logistic Regression
+
+```{r}
+set.seed(720)
+glmn_train<- class_grid("glmnet", glmnGrid, ctrl)
+
+glmn_train
+```
+
 
 ### Naive Bayes
 
@@ -182,7 +196,7 @@ knn_train
 
 ### Neural Network Model
 
-```{r, echo=FALSE}
+```{r}
 set.seed(720)
 nnet_train<- class_grid("nnet", nnet_grid, ctrl)
 
@@ -227,6 +241,7 @@ model_roc <- function(model){
 }
 
 glm_roc<- model_roc(glm_train)
+glmn_roc<- model_roc(glmn_train)
 nb_roc<- model_roc(nb_train)
 knn_roc<- model_roc(knn_train)
 nnet_roc<- model_roc(nnet_train)
@@ -236,26 +251,29 @@ rf_roc<- model_roc(rf_train)
 
 plot(glm_roc, type = "s", col = 'red', legacy.axes = TRUE, 
      main = "Hiring Decision ROC Curve")
+plot(glmn_roc, type = "s", add = TRUE, col = 'brown', legacy.axes = TRUE)
 plot(nb_roc, type = "s", add = TRUE, col = 'blue', legacy.axes = TRUE)
 plot(knn_roc, type = "s", add = TRUE, col = 'pink', legacy.axes = TRUE)
 plot(nnet_roc, type = "s", add = TRUE, col = 'yellow', legacy.axes = TRUE)
 plot(cart_roc, type = "s", add = TRUE, col = 'green', legacy.axes = TRUE)
 plot(c50_roc, type = "s", add = TRUE, col = 'purple', legacy.axes = TRUE)
 plot(rf_roc, type = "s", add = TRUE, col = 'orange', legacy.axes = TRUE)
-legend("bottomright", legend=c(paste("LR (AUC =", round(glm_roc$auc,4), ")"), 
+legend("bottomright", legend=c(paste("LR (AUC =", round(glm_roc$auc,4), ")"),
+                               paste("Penalized LR (AUC =", round(glmn_roc$auc,4), ")"),
                                paste("NB (AUC =", round(nb_roc$auc,4), ")"), 
                                paste("KNN (AUC =", round(knn_roc$auc,4), ")"), 
                                paste("NNET (AUC =", round(nnet_roc$auc,4), ")"),
                                paste("CART (AUC =", round(cart_roc$auc,4), ")"), 
                                paste("C5.0 (AUC =", round(c50_roc$auc,4), ")"),
                                paste("Random Forest (AUC =", round(rf_roc$auc,4), ")")),
-       col=c("red", "blue", "pink", "yellow", "green", "purple", "orange"), lwd=2)
+       col=c("red", "brown", "blue", "pink", "yellow", "green", "purple", "orange"), lwd=2)
 ```
 
 
 ```{r}
 train_re<- resamples(list(
   glm = glm_train,
+  glmn = glmn_train,
   nb = nb_train,
   knn = knn_train,
   nnet = nnet_train,
@@ -271,6 +289,9 @@ dotplot(train_re, metric = "ROC")
 ```{r}
 glm_imp<- varImp(glm_train)
 plot(glm_imp, top = 10, main = "CV GLM Variable Importance")
+
+glmn_imp<- varImp(glmn_train)
+plot(glmn_imp, top = 10, main = "CV Penalized LR Variable Importance")
 
 nb_imp<- varImp(nb_train)
 plot(nb_imp, top = 10, main = "CV NB Variable Importance")
@@ -298,6 +319,7 @@ plot(rf_imp, top = 10, main = "CV RF Variable Importance")
 testResults <- data.frame(
   obs = recruit_test_n$HiringDecision,
   glm = predict(glm_train, recruit_test_n[, 1:16]),
+  glmn = predict(glmn_train, recruit_test_n[, 1:16]),
   nb = predict(nb_train, recruit_test_n[, 1:16]),
   knn = predict(knn_train, recruit_test_n[, 1:16]),
   nnet = predict(nnet_train, recruit_test_n[, 1:16]),
@@ -309,6 +331,8 @@ testResults <- data.frame(
 
 ```{r}
 confusionMatrix(testResults$obs, testResults$glm)
+
+confusionMatrix(testResults$obs, testResults$glmn)
 
 confusionMatrix(testResults$obs, testResults$nb)
 
