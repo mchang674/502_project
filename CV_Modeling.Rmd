@@ -25,6 +25,7 @@ library(fastDummies)
 library(class)
 library(naivebayes)
 library(pROC)
+library(party)
 ```
 
 Reading in data
@@ -48,6 +49,102 @@ recruitment<- recruitment %>%
                                        Bachelor_2 = 2,
                                        Masters = 3,
                                        PhD = 4))
+```
+
+# Data Visualization
+
+Distribution of Variables
+
+```{r}
+hist<- function(col, bin_num){
+  ggplot(data = recruitment) +
+    geom_histogram(aes(x = .data[[col]]), bins = bin_num) +
+    xlab(col)
+}
+
+
+hist("Age", 20)
+
+hist("ExperienceYears", 15) +
+  xlab("Years of Experience")
+
+hist("PreviousCompanies", 5) +
+  xlab("Number of Previous Companies")
+
+hist("DistanceFromCompany", 30) +
+  xlab("Distance from Company")
+
+hist("InterviewScore", 25) +
+  xlab("Interview Score")
+
+hist("SkillScore", 25)+
+  xlab("Skill Score")
+
+hist("PersonalityScore", 25) +
+  xlab("Personality Score")
+```
+
+```{r}
+bar<- function(col){
+  ggplot(data = recruitment) +
+    geom_bar(aes(x = .data[[col]])) +
+    xlab(col)
+}
+
+bar("Gender_name") +
+  xlab("Sex")
+
+bar("Education_name") +
+  xlab("Education Type")
+
+bar("Recruitment_name") +
+  xlab("Recruitment Level")
+
+bar("Hiring_name") +
+  xlab("Hiring Outcome")
+```
+
+```{r}
+ggplot(data = recruitment) +
+  geom_bar(aes(x = Recruitment_name, fill = Hiring_name)) +
+  xlab("Recruitment Type") +
+  guides(fill = guide_legend(title = "Hiring Decision"))
+
+ggplot(data = recruitment) +
+  geom_bar(aes(x = Gender_name, fill = Hiring_name)) +
+  xlab("Sex of Applicant") +
+  guides(fill = guide_legend(title = "Hiring Decision"))
+
+ggplot(data = recruitment) +
+  geom_bar(aes(x = Education_name, fill = Hiring_name)) +
+  xlab("Education Level") +
+  guides(fill = guide_legend(title = "Hiring Decision"))
+```
+
+```{r}
+hiring_point<- function(x, y){
+  ggplot(data = recruitment) +
+    geom_point(aes(x = .data[[x]], y = .data[[y]], color = Hiring_name))
+}
+
+hiring_point("SkillScore", "PersonalityScore") + 
+  guides(color = guide_legend(title = "Hiring Decision"))
+
+hiring_point("SkillScore", "InterviewScore") +
+  guides(color = guide_legend(title = "Hiring Decision"))
+```
+
+
+```{r}
+ggplot(data = recruitment) +
+  geom_point(aes(x = SkillScore, y = InterviewScore, color = Gender_name))+
+  facet_grid(~Hiring_name) + 
+  guides(color = guide_legend(title = "Sex of Applicant"))
+
+ggplot(data = recruitment) +
+  geom_point(aes(x = SkillScore, y = PersonalityScore, color = Gender_name)) +
+  facet_grid(~Hiring_name) + 
+  guides(color = guide_legend(title = "Sex of Applicant"))
 ```
 
 ### Splitting Data
@@ -112,6 +209,17 @@ class_grid<- function(method, grid, ctrl){
                preProc = c("center", "scale"),
                tuneGrid = grid,
                metric = "ROC",
+               trControl = ctrl)
+}
+
+# Function for classification methods with a tuning grid
+class_nnet<- function(method, grid, ctrl){
+  model<- train(x = recruit_train_n[,1:16], 
+               y = recruit_train_n$HiringDecision,
+               method = method,
+               preProc = c("center", "scale"),
+               tuneGrid = grid,
+               metric = "ROC",
                trace = FALSE,
                trControl = ctrl)
 }
@@ -154,7 +262,7 @@ glmnGrid <- expand.grid(alpha = seq(0, 0.2, length = 10),
 nnet_grid <- expand.grid(size=1:4, decay=c(2, 2.5, 3, 3.5, 4, 4.5, 5))
 
 cart_grid<- data.frame(maxdepth = seq(5, 20, 1))
-
+                       
 rf_grid <- data.frame(mtry = seq(5,15,1))
 ```
 
@@ -198,7 +306,7 @@ knn_train
 
 ```{r}
 set.seed(720)
-nnet_train<- class_grid("nnet", nnet_grid, ctrl)
+nnet_train<- class_nnet("nnet", nnet_grid, ctrl)
 
 nnet_train
 ```
@@ -207,7 +315,7 @@ nnet_train
 
 ```{r}
 set.seed(720)
-cart_train<- class_grid("rpart2", cart_grid, ctrl)
+cart_train<- class_grid("rpart", cart_grid, ctrl)
 
 cart_train
 ```
